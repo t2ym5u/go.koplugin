@@ -98,13 +98,16 @@ function GoScreen:buildLayout()
         self.board_widget,
     }
 
+    local button_width = is_landscape and math.max(math.floor(sw * 0.3), 120) or math.floor(sw * 0.9)
     local pass_button = ButtonTable:new{
-        width = is_landscape and math.max(math.floor(sw * 0.3), 120) or math.floor(sw * 0.9),
+        width = button_width,
         shrink_unneeded_width = true,
         buttons = {{
             { text = _("Pass"), callback = function() self:onPass() end },
         }},
     }
+
+    self.status_text:setMaxWidth(is_landscape and button_width or board_frame:getSize().w)
 
     if is_landscape then
         local right = VerticalGroup:new{
