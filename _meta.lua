@@ -1,7 +1,7 @@
 local _ = require("gettext")
 
 return {
-    version     = "1.0.8",
+    version     = "1.0.9",
     fullname    = _("Go"),
     description = _("Classic territory and capture board game."),
 }
