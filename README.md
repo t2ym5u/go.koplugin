@@ -12,11 +12,12 @@ Two players alternate placing black and white stones on grid intersections. A st
 
 ## Concept
 
-The classic territory-and-capture board game, played pass-and-play on a single device.
+The classic territory-and-capture board game, against the device or pass-and-play with a friend.
 
 ## Features
 
 - **Multiple board sizes**
+- **Computer opponent** — optional, plays White; a beginner that watches for captures, atari and self-atari, and will not fill its own eyes
 - **Capture detection** — stones/groups removed automatically when surrounded
 - **Auto-save** — in-progress game restored on next launch
 

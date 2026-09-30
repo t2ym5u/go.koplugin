@@ -67,6 +67,57 @@ function GoScreen:init()
     ScreenBase.init(self)
 end
 
+-- ---------------------------------------------------------------------------
+-- Opponent
+--
+-- The computer plays White, so a solo player keeps the first move. It is a
+-- beginner and says so: no search, just the things beginners actually lose
+-- games to -- captures on offer, its own groups in atari, and never filling
+-- its own eyes. See board:getAIMove().
+-- ---------------------------------------------------------------------------
+
+local AI_COLOR = "white"
+local AI_DELAY = 0.35
+
+function GoScreen:isSolo()
+    return self.plugin:getSetting("opponent", "human") == "ai"
+end
+
+function GoScreen:getOpponentButtonText()
+    return self:isSolo() and _("Opponent: Computer") or _("Opponent: Human")
+end
+
+function GoScreen:toggleOpponent()
+    self.plugin:saveSetting("opponent", self:isSolo() and "human" or "ai")
+    self:updateStatus(self:isSolo()
+        and _("The computer now plays White.")
+        or  _("Two players on one device."))
+    self:maybeRunAI()
+end
+
+function GoScreen:maybeRunAI()
+    local board = self.board
+    if not self:isSolo() then return end
+    if board.status ~= "playing" or board.turn ~= AI_COLOR then return end
+    if self.ai_thinking then return end
+    self.ai_thinking = true
+
+    UIManager:scheduleIn(AI_DELAY, function()
+        self.ai_thinking = false
+        if board.status ~= "playing" or board.turn ~= AI_COLOR then return end
+        local mv = board:getAIMove()
+        if mv and board:placeStone(mv.r, mv.c) == "ok" then
+            self.board_widget:refresh()
+            self:updateStatus()
+        else
+            board:pass()
+            self.board_widget:refresh()
+            self:updateStatus(_("The computer passed."))
+        end
+        self.plugin:saveState(self:serializeState())
+    end)
+end
+
 function GoScreen:serializeState()
     return self.board:serialize()
 end
@@ -79,6 +130,7 @@ function GoScreen:buildLayout()
     local title_bar = self:buildTitleBar(_("Go"), function()
         return {
             { text = _("New game"),     callback = function() self:onNewGame() end },
+            { text = self:getOpponentButtonText(), callback = function() self:toggleOpponent() end },
             { text = self:_sizeLabel(), callback = function() self:openSizeMenu() end },
             { text = _("Pass"),         callback = function() self:onPass() end },
             self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
@@ -148,6 +200,7 @@ function GoScreen:onCellAction(r, c)
     self.board_widget:refresh()
     self.plugin:saveState(self:serializeState())
     self:updateStatus()
+    self:maybeRunAI()
 end
 
 function GoScreen:onPass()
@@ -165,6 +218,7 @@ function GoScreen:onPass()
         self:showMessage(T(_("%1 wins! Black: %2  White: %3"), winner_label, fs.black, fs.white), 5)
     else
         self:updateStatus()
+        self:maybeRunAI()
     end
 end
 
@@ -173,6 +227,7 @@ function GoScreen:onNewGame()
     self.plugin:saveState(self.board:serialize())
     self:buildLayout()
     UIManager:setDirty(self, function() return "ui", self.dimen end)
+    self:maybeRunAI()
 end
 
 function GoScreen:openSizeMenu()

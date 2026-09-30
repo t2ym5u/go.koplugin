@@ -243,6 +243,127 @@ end
 -- on the board at double-pass is counted as alive. Players must actually
 -- capture dead groups before double-passing for the score to be accurate
 -- (documented in the in-app rules text).
+-- ---------------------------------------------------------------------------
+-- AI
+--
+-- A beginner that plays sensibly rather than a strong engine: no search, no
+-- playouts. Search in Go is only as good as its ability to tell a live group
+-- from a dead one, and a shallow one on an e-ink CPU plays worse than clear
+-- rules of thumb. What this does understand is what beginners lose games to:
+-- captures on offer, its own groups in atari, filling its own eyes, and
+-- playing stones straight into capture.
+-- ---------------------------------------------------------------------------
+
+-- Plays (r,c) on a copy and reports what happens: how many enemy stones it
+-- takes, and how many liberties the placed stone's own group is left with.
+function GoBoard:_simulate(r, c, color)
+    local n = self.n
+    local opp = (color == BLACK) and WHITE or BLACK
+    local scratch = copyGrid(self.grid, n)
+    scratch[r][c] = color
+
+    local captured, checked = 0, {}
+    for _, d in ipairs(DIRS4) do
+        local nr, nc = r + d[1], c + d[2]
+        if inBounds(nr, nc, n) and scratch[nr][nc] == opp then
+            local key = nr * 1000 + nc
+            if not checked[key] then
+                local grp = self:getGroup(scratch, nr, nc)
+                for _, st in ipairs(grp.stones) do checked[st[1] * 1000 + st[2]] = true end
+                if grp.liberties == 0 then
+                    for _, st in ipairs(grp.stones) do scratch[st[1]][st[2]] = EMPTY end
+                    captured = captured + #grp.stones
+                end
+            end
+        end
+    end
+    local own = self:getGroup(scratch, r, c)
+    return captured, own.liberties, #own.stones
+end
+
+-- A point entirely surrounded by one's own stones is almost always an eye,
+-- and filling one is how a beginner kills a living group. Not a perfect eye
+-- test -- it ignores the diagonals that decide false eyes -- but it is the
+-- mistake worth refusing.
+function GoBoard:_isOwnEye(r, c, color)
+    local n = self.n
+    for _, d in ipairs(DIRS4) do
+        local nr, nc = r + d[1], c + d[2]
+        if inBounds(nr, nc, n) and self.grid[nr][nc] ~= color then return false end
+    end
+    return true
+end
+
+-- Smallest liberty count among this colour's groups next to (r,c).
+function GoBoard:_adjacentGroupLiberties(r, c, color)
+    local n = self.n
+    local fewest
+    for _, d in ipairs(DIRS4) do
+        local nr, nc = r + d[1], c + d[2]
+        if inBounds(nr, nc, n) and self.grid[nr][nc] == color then
+            local grp = self:getGroup(self.grid, nr, nc)
+            if not fewest or grp.liberties < fewest then fewest = grp.liberties end
+        end
+    end
+    return fewest
+end
+
+-- nil means pass: either nothing is legal, or every legal point would only
+-- damage its own position.
+function GoBoard:getAIMove()
+    if self.status ~= "playing" then return nil end
+    local n = self.n
+    local color = (self.turn == "black") and BLACK or WHITE
+    local opp   = (color == BLACK) and WHITE or BLACK
+    local centre = (n + 1) / 2
+
+    local best, best_score = nil, nil
+    for r = 1, n do
+        for c = 1, n do
+            if self.grid[r][c] == EMPTY and not self:_isOwnEye(r, c, color)
+               and self:isLegalMove(r, c, color) then
+                local captured, liberties = self:_simulate(r, c, color)
+                local score = 0
+
+                score = score + captured * 12
+
+                -- Rescuing one's own group in atari is worth about as much as
+                -- the stones it would otherwise lose.
+                local own_atari = self:_adjacentGroupLiberties(r, c, color)
+                if own_atari == 1 and liberties > 1 then score = score + 10 end
+
+                -- Putting an enemy group in atari threatens it next turn.
+                local opp_liberties = self:_adjacentGroupLiberties(r, c, opp)
+                if opp_liberties == 2 then score = score + 5 end
+
+                -- Self-atari: a stone placed into capture is usually just a
+                -- gift, unless it took something first.
+                if liberties == 1 and captured == 0 then score = score - 15 end
+                if liberties == 2 then score = score - 1 end
+
+                -- Stay off the very edge, and favour contact with the action.
+                local edge = math.min(r - 1, c - 1, n - r, n - c)
+                if edge == 0 then score = score - 4 elseif edge == 1 then score = score - 1 end
+                for _, d in ipairs(DIRS4) do
+                    local nr, nc = r + d[1], c + d[2]
+                    if inBounds(nr, nc, n) and self.grid[nr][nc] ~= EMPTY then
+                        score = score + 2
+                    end
+                end
+                score = score - (math.abs(r - centre) + math.abs(c - centre)) * 0.2
+
+                if not best_score or score > best_score then
+                    best_score, best = score, { r = r, c = c }
+                end
+            end
+        end
+    end
+
+    -- Every remaining point would be self-atari or eye-filling: pass instead.
+    if best_score and best_score <= -12 then return nil end
+    return best
+end
+
 function GoBoard:scoreTerritory()
     local n = self.n
     local visited = {}
