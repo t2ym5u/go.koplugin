@@ -7,4 +7,11 @@ return {
     ["Go"]                                        = { fr = "Go", es = "Go", de = "Go" },
     ["Pass"]                                       = { fr = "Passer", es = "Pasar", de = "Passen" },
     ["White"]                                     = { fr = "Blanc", es = "Blanco", de = "Weiß" },
+
+    -- Solo mode (screen.lua)
+    ["Opponent: Computer"] = { fr = "Adversaire : ordinateur", es = "Rival: ordenador", de = "Gegner: Computer" },
+    ["Opponent: Human"] = { fr = "Adversaire : humain", es = "Rival: humano", de = "Gegner: Mensch" },
+    ["The computer now plays White."] = { fr = "L'ordinateur joue désormais les Blancs.", es = "El ordenador juega ahora con blancas.", de = "Der Computer spielt jetzt Weiß." },
+    ["Two players on one device."] = { fr = "Deux joueurs sur le même appareil.", es = "Dos jugadores en el mismo dispositivo.", de = "Zwei Spieler auf einem Gerät." },
+    ["The computer passed."] = { fr = "L'ordinateur a passé.", es = "El ordenador ha pasado.", de = "Der Computer hat gepasst." },
 }
