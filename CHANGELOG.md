@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-10-02
+
+### Fixed
+- `Black` and `White` became `Black side` and `White side`. `package.loaded`
+  is keyed by module name alone, so every `require("i18n")` on the device
+  resolves to one module and the first plugin loaded wins it. Every plugin's
+  `i18n_fr.lua` merges into that one shared table, where plugins silently
+  overwrite each other's translations. This plugin wants the French singular
+  ("Noir", "Blanc") while chess, chesscourse, gomoku and othello want the
+  plural ("Noirs", "Blancs"), and the chess form was winning -- so the side
+  label here read "Noirs" in French. Distinct keys let both be right.
+
 ## [1.1.1] - 2026-10-01
 
 ### Fixed
