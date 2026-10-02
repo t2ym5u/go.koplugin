@@ -214,7 +214,7 @@ function GoScreen:onPass()
     if result == "ended" then
         self:updateStatus()
         local fs = board.final_score
-        local winner_label = board.winner == "black" and _("Black") or _("White")
+        local winner_label = board.winner == "black" and _("Black side") or _("White side")
         self:showMessage(T(_("%1 wins! Black: %2  White: %3"), winner_label, fs.black, fs.white), 5)
     else
         self:updateStatus()
@@ -263,10 +263,10 @@ function GoScreen:updateStatus(msg)
         status = msg
     elseif self.board.status == "ended" then
         local fs = self.board.final_score
-        local winner_label = self.board.winner == "black" and _("Black") or _("White")
+        local winner_label = self.board.winner == "black" and _("Black side") or _("White side")
         status = T(_("%1 wins! Black: %2  White: %3"), winner_label, fs.black, fs.white)
     else
-        local turn_label = self.board.turn == "black" and _("Black") or _("White")
+        local turn_label = self.board.turn == "black" and _("Black side") or _("White side")
         status = T(_("%1 to play  B:%2 W:%3"),
             turn_label, self.board.captures.black, self.board.captures.white)
     end
