@@ -1,8 +1,10 @@
 return {
-    ["%1 to play  B:%2 W:%3"]                    = { fr = "%1 à jouer  N:%2 B:%3", es = "%1 a jugar  N:%2 B:%3", de = "%1 am Zug  S:%2 W:%3" },
+    ["Black to play"]                             = { fr = "Noir à jouer", es = "Juega Negro", de = "Schwarz am Zug" },
+    ["White to play"]                             = { fr = "Blanc à jouer", es = "Juega Blanco", de = "Weiß am Zug" },
+    ["Captures: B%1 W%2"]                         = { fr = "Prises : N%1 B%2", es = "Capturas: N%1 B%2", de = "Gefangene: S%1 W%2" },
     ["%1 wins! Black: %2  White: %3"]             = { fr = "%1 gagne ! Noir : %2  Blanc : %3", es = "¡%1 gana! Negro: %2  Blanco: %3", de = "%1 gewinnt! Schwarz: %2  Weiß: %3" },
     ["Black side"]                                     = { fr = "Noir", es = "Negro", de = "Schwarz" },
-    ["Board size"]                                = { fr = "Taille du plateau", es = "Tamaño del tablero", de = "Brettgröße" },
+    ["Size"]                                      = { fr = "Taille", es = "Tamaño", de = "Größe" },
     ["Classic territory and capture board game."] = { fr = "Jeu de plateau classique de territoire et de capture.", es = "Juego de mesa clásico de territorio y captura.", de = "Klassisches Brettspiel um Gebiet und Gefangene." },
     ["Go"]                                        = { fr = "Go", es = "Go", de = "Go" },
     ["Pass"]                                       = { fr = "Passer", es = "Pasar", de = "Passen" },

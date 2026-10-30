@@ -7,8 +7,6 @@ local function lrequire(name)
     return package.loaded[key]
 end
 
-local ButtonTable     = require("ui/widget/buttontable")
-local Device          = require("device")
 local FrameContainer  = require("ui/widget/container/framecontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
@@ -24,8 +22,6 @@ local ScreenBase = require("screen_base")
 
 local GoBoard       = lrequire("board")
 local GoBoardWidget = lrequire("board_widget")
-
-local DeviceScreen = Device.screen
 
 local GAME_RULES_EN = _([[
 Go — Rules
@@ -118,71 +114,65 @@ function GoScreen:maybeRunAI()
     end)
 end
 
+-- Two passes in a row end the game.
+function GoScreen:isRoundOver()
+    return self.board.status ~= "playing"
+end
+
 function GoScreen:serializeState()
     return self.board:serialize()
 end
 
 function GoScreen:buildLayout()
-    local sw = DeviceScreen:getWidth()
-    local sh = DeviceScreen:getHeight()
     local is_landscape = self:isLandscape()
 
     local title_bar = self:buildTitleBar(_("Go"), function()
         return {
             { text = _("New game"),     callback = function() self:onNewGame() end },
+            { text = T(_("Size: %1"), self:_sizeLabel()), callback = function() self:openSizeMenu() end },
             { text = self:getOpponentButtonText(), callback = function() self:toggleOpponent() end },
-            { text = self:_sizeLabel(), callback = function() self:openSizeMenu() end },
             { text = _("Pass"),         callback = function() self:onPass() end },
             self:makeRulesButtonConfig(GAME_RULES_EN, GAME_RULES_FR),
         }
     end)
 
-    local board_size = is_landscape and (sh - 40) or math.floor(sw * 0.94)
+    local controls_w = self:getControlsWidth()
+    self.status_text:setMaxWidth(controls_w)
+    local controls = VerticalGroup:new{
+        align = "center",
+        self.status_text,
+        VerticalSpan:new{ width = Size.span.vertical_large },
+        self:buildActionBar({
+            { text = _("Pass"), callback = function() self:onPass() end },
+        }),
+    }
+
+    local frame_pad = Size.padding.default
+    local frame_extra = 2 * (frame_pad + Size.border.window)
+    local budget_w, budget_h = self:getBoardBudget(title_bar, controls)
     self.board_widget = GoBoardWidget:new{
         board        = self.board,
-        size         = board_size,
+        size         = math.min(budget_w, budget_h) - frame_extra,
         onCellAction = function(r, c) self:onCellAction(r, c) end,
     }
 
     local board_frame = FrameContainer:new{
-        padding = Size.padding.default,
-        margin  = Size.margin.default,
+        padding = frame_pad,
+        margin  = 0,
         self.board_widget,
     }
 
-    local button_width = is_landscape and math.max(math.floor(sw * 0.3), 120) or math.floor(sw * 0.9)
-    local pass_button = ButtonTable:new{
-        width = button_width,
-        shrink_unneeded_width = true,
-        buttons = {{
-            { text = _("Pass"), callback = function() self:onPass() end },
-        }},
-    }
-
-    self.status_text:setMaxWidth(is_landscape and button_width or board_frame:getSize().w)
-
     if is_landscape then
-        local right = VerticalGroup:new{
-            align = "center",
-            self.status_text,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            pass_button,
-        }
         local content = HorizontalGroup:new{
             align  = "center",
             board_frame,
-            HorizontalSpan:new{ width = Size.span.horizontal_default },
-            right,
+            HorizontalSpan:new{ width = self:getGutter() },
+            controls,
         }
         self:buildLandscapeLayout(title_bar, content)
     else
-        local footer = VerticalGroup:new{
-            align = "center",
-            pass_button,
-            VerticalSpan:new{ width = Size.span.vertical_large },
-            self.status_text,
-        }
-        self:buildPortraitLayout(title_bar, board_frame, footer)
+        self:buildPortraitLayout(title_bar, board_frame,
+            VerticalGroup:new{ align = "center", controls, VerticalSpan:new{ width = self:getGutter() } })
     end
     self:updateStatus()
 end
@@ -236,7 +226,7 @@ function GoScreen:openSizeMenu()
         items[#items + 1] = { id = cfg.id, text = cfg.label }
     end
     MenuHelper.openPickerMenu{
-        title      = _("Board size"),
+        title      = _("Size"),
         items      = items,
         current_id = self.board.size_id,
         parent     = self,
@@ -266,11 +256,14 @@ function GoScreen:updateStatus(msg)
         local winner_label = self.board.winner == "black" and _("Black side") or _("White side")
         status = T(_("%1 wins! Black: %2  White: %3"), winner_label, fs.black, fs.white)
     else
-        local turn_label = self.board.turn == "black" and _("Black side") or _("White side")
-        status = T(_("%1 to play  B:%2 W:%3"),
-            turn_label, self.board.captures.black, self.board.captures.white)
+        status = self:joinStatus(
+            T("%1×%1", self.board.n),
+            self.board.turn == "black" and _("Black to play") or _("White to play"),
+            T(_("Captures: B%1 W%2"), self.board.captures.black, self.board.captures.white))
     end
     ScreenBase.updateStatus(self, status)
+    -- Every move and pass (player's or computer's) ends here.
+    self:refreshActionBar()
 end
 
 return GoScreen

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-10-30
+
+### Added
+- "New game" once the game is over (two passes in a row): the action bar
+  shows it in place of Pass, so the next game no longer needs the menu.
+
+### Changed
+- Redesigned play screen, in line with the other games: a full-width action
+  bar and a larger board that fills the available room. The status line
+  reads "size · Black to play · Captures: B0 W0" and wraps in landscape
+  instead of being cut off.
+- Title-bar menu in the same order as every other game: New game, "Size:
+  9×9" (was a bare "9×9" after the opponent entry), Opponent, Pass, Rules.
+- New README screenshot.
+
+### Fixed
+- Stones on the edge of the board were clipped. The margin around the grid
+  was a fixed 4% of the board, smaller than a stone's radius on 9×9; it is
+  now about half a cell, so edge stones are drawn whole.
+
 ## [1.1.2] - 2026-10-02
 
 ### Fixed

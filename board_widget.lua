@@ -34,9 +34,11 @@ local STAR_POINTS = {
 function GoBoardWidget:init()
     local n = self.board.n
     self.n = n
-    -- Margin reserves room so stones at the edge aren't clipped.
-    self.margin = math.max(10, math.floor(self.size * 0.04))
-    self.cell = math.floor((self.size - 2 * self.margin) / math.max(1, n - 1))
+    -- One cell per line, so the margin comes out at about half a cell: room
+    -- for an edge stone (radius 0.44 cell) without clipping it. A fixed 4%
+    -- margin was smaller than the stone radius on 9×9 and cut edge stones.
+    self.cell = math.floor(self.size / math.max(1, n))
+    self.margin = math.floor((self.size - (n - 1) * self.cell) / 2)
     self.stone_r = math.max(3, math.floor(self.cell * 0.44))
 
     self.dimen = Geom:new{ w = self.size, h = self.size }
