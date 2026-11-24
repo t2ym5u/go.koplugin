@@ -61,6 +61,9 @@ function GoScreen:init()
         self.board:reset(size_id)
     end
     ScreenBase.init(self)
+    -- A saved game may reopen on the computer's turn: nothing else would
+    -- start it.
+    self:maybeRunAI()
 end
 
 -- ---------------------------------------------------------------------------
@@ -98,9 +101,10 @@ function GoScreen:maybeRunAI()
     if self.ai_thinking then return end
     self.ai_thinking = true
 
-    UIManager:scheduleIn(AI_DELAY, function()
+    self:schedule(AI_DELAY, function()
         self.ai_thinking = false
-        if board.status ~= "playing" or board.turn ~= AI_COLOR then return end
+        -- Re-checked: the opponent may have been switched to a human meanwhile.
+        if not self:isSolo() or board.status ~= "playing" or board.turn ~= AI_COLOR then return end
         local mv = board:getAIMove()
         if mv and board:placeStone(mv.r, mv.c) == "ok" then
             self.board_widget:refresh()
@@ -213,6 +217,8 @@ function GoScreen:onPass()
 end
 
 function GoScreen:onNewGame()
+    self:cancelScheduled()  -- an AI move still pending belongs to the old game
+    self.ai_thinking = false
     self.board:reset(self.plugin:getSetting("size_id", GoBoard.DEFAULT_SIZE))
     self.plugin:saveState(self.board:serialize())
     self:buildLayout()
@@ -232,6 +238,8 @@ function GoScreen:openSizeMenu()
         parent     = self,
         on_select  = function(id)
             self.plugin:saveSetting("size_id", id)
+            self:cancelScheduled()  -- a pending AI move belongs to the old board
+            self.ai_thinking = false
             self.board:reset(id)
             self.plugin:saveState(self.board:serialize())
             self:buildLayout()
